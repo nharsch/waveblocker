@@ -1,0 +1,14 @@
+{
+  "name": "waveblock",
+  "version": "1.0.0",
+  "description": "move things around with audio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.126.0"
+  }
+}

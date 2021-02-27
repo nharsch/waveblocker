@@ -5,41 +5,38 @@
 
 
 ; TODO: mic input level atom
-(def app-state (atom { :mic-level 0 }))
-; TODO: FFT input atom
-;
-;
-(defn get-brush-rgb []
-  [
-   (* 255 ((comp Math/log2 inc) (:mic-level @app-state)))
-   0
-   0
-   ]
-)
-
-;; (map (comp Math/log2 inc) [0 0.25 0.5 0.75 1])
+(def app-state
+  (atom {
+         :mic-level 0
+         "sound-rgb" [0 0 0]}))
 
 
-
-
-;; @app-state
-
-;; (.getLevel mic)
-;; (get-brush-rgb)
 
 (defn setup [p]
-  (def cnv (.createCanvas p 640 480))
+  (def cnv (.createCanvas p 2100 1200))
   (p.userStartAudio)
   ;; (cnv.mousePressed (fn [] p.userStartAudio))
   (def mic (js/window.p5.AudioIn.))
+  (def fft (js/window.p5.FFT. 0.8 32))
   (.start mic)
+  (.setInput fft mic)
 )
 
 (defn draw [p]
-  (swap! app-state assoc :mic-level (.getLevel mic))
+  ; TOOD: but these together
+  (.analyze fft)
+  (swap! app-state assoc :sound-rgb
+         [
+          (.getEnergy fft "bass")
+          (.getEnergy fft "mid")
+          (.getEnergy fft "treble")
+          ])
   (.fill p 50)
   (.text p "tap to start" 300 300)
-  (.fill p (first (get-brush-rgb)))
+  (.fill p
+         (nth (@app-state :sound-rgb) 0)
+         (nth (@app-state :sound-rgb) 1)
+         (nth (@app-state :sound-rgb) 2))
   (.ellipse p (.-mouseX p) (.-mouseY p) 80 80))
 
 (def parent-id  "example")
@@ -52,3 +49,6 @@
       (set! (.-setup p) (fn [] (setup p)))
       (set! (.-draw p) (fn [] (draw p))))
        parent-id))
+
+(.getLevel mic)
+(.getEnergy fft)

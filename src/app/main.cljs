@@ -10,8 +10,6 @@
          :mic-level 0
          "sound-rgb" [0 0 0]}))
 
-
-
 (defn setup [p]
   (def cnv (.createCanvas p 2100 1200))
   (p.userStartAudio)
@@ -51,4 +49,21 @@
        parent-id))
 
 (.getLevel mic)
+
+;; (.getLogAverages fft
+ ;; (.getOctaveBands fft 1  55))
+(.logAverages fft (.getOctaveBands fft 1 55))
+
 (.getEnergy fft)
+(.logAverages fft 5)
+
+;; (defn fft-to-hue [fft]
+;;   (let [octaves (.logAverages fft)]
+;;    octaves
+;;     )
+;; )
+
+
+
+(defn fft-to-hsb [fft]
+  )

@@ -1,41 +1,65 @@
 (ns app.main
   (:require
    [goog.dom :as d]
+   ;; [goog.events :as gevents]
    ))
 
 
 ; TODO: mic input level atom
 (def app-state
   (atom {
+         :app-on false
+         :mic-on false
          :mic-level 0
-         "sound-rgb" [0 0 0]}))
+         }
+         ))
+
+(defn turn-on []
+  (swap! app-state assoc :app-on true)
+)
+
+(defn fft-to-hue [fft]
+  ;; [(* 360 (:getLevel mic)) 0.5 0.5]
+)
+
+
 
 (defn setup [p]
   (def cnv (.createCanvas p 2100 1200))
+  cnv.mouseClicked
+  (.mouseClicked cnv turn-on)
   (p.userStartAudio)
-  ;; (cnv.mousePressed (fn [] p.userStartAudio))
   (def mic (js/window.p5.AudioIn.))
   (def fft (js/window.p5.FFT. 0.8 32))
+
   (.start mic)
   (.setInput fft mic)
 )
 
+
 (defn draw [p]
   ; TOOD: but these together
-  (.analyze fft)
-  (swap! app-state assoc :sound-rgb
-         [
-          (.getEnergy fft "bass")
-          (.getEnergy fft "mid")
-          (.getEnergy fft "treble")
-          ])
-  (.fill p 50)
-  (.text p "tap to start" 300 300)
-  (.fill p
-         (nth (@app-state :sound-rgb) 0)
-         (nth (@app-state :sound-rgb) 1)
-         (nth (@app-state :sound-rgb) 2))
-  (.ellipse p (.-mouseX p) (.-mouseY p) 80 80))
+  (if-not (:app-on @app-state)
+    (do
+        (.clear p)
+        (.fill p 50)
+        (.text p "tap to start" 300 300)
+    )
+    (do
+        ; TODO: only call once
+        (.analyze fft)
+        ; get color info from mix
+        (let [hue (fft-to-hue mic)]
+            (.colorMode p "hsb" 100)
+            (.fill p
+                (* 100 (.getLevel mic))
+                100
+                100
+                ;; (nth hue 0)
+                ;; (nth hue 1)
+                ;; (nth hue 2)))
+                ))
+        (.ellipse p (.-mouseX p) (.-mouseY p) 80 80))))
 
 (def parent-id  "example")
 (when-not (d/getElement parent-id)
@@ -48,14 +72,15 @@
       (set! (.-draw p) (fn [] (draw p))))
        parent-id))
 
-(.getLevel mic)
 
 ;; (.getLogAverages fft
  ;; (.getOctaveBands fft 1  55))
-(.logAverages fft (.getOctaveBands fft 1 55))
+ ;;
+;; (.logAverages fft (.getOctaveBands fft 1 55))
 
-(.getEnergy fft)
-(.logAverages fft 5)
+;; (.getCentroid fft)
+;; (.getEnergy fft)
+;; (.logAverages fft 5)
 
 ;; (defn fft-to-hue [fft]
 ;;   (let [octaves (.logAverages fft)]
@@ -63,7 +88,8 @@
 ;;     )
 ;; )
 
-
-
-(defn fft-to-hsb [fft]
-  )
+;; @app-state
+(defn reset-app-state []
+  (swap! app-state (fn [] {:app-on false :mic-on false}))
+)
+;; (reset-app-state)

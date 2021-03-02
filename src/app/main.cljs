@@ -12,17 +12,31 @@
          :mic-on false
          :mic-level 0
          }
-         ))
+  )
+)
 
 (defn turn-on []
   (swap! app-state assoc :app-on true)
 )
 
 (defn fft-to-hue [fft]
-  ;; [(* 360 (:getLevel mic)) 0.5 0.5]
+  [
+   (* 100 (:getLevel fft))
+   50
+   50
+  ]
 )
 
+(defn geo-progression [a r n]
+  (* (* a 1) (Math/pow r (- n 1))))
 
+(defn freq-to-hue [base-freq color-max freq]
+  (let [i (+ 1 (* (- freq base-freq) (/ 1 base-freq)))]
+    (*
+     (- (geo-progression 1 2 i) 1)
+     color-max)))
+
+;; TODO: find note, find octave
 
 (defn setup [p]
   (def cnv (.createCanvas p 2100 1200))
@@ -31,7 +45,6 @@
   (p.userStartAudio)
   (def mic (js/window.p5.AudioIn.))
   (def fft (js/window.p5.FFT. 0.8 32))
-
   (.start mic)
   (.setInput fft mic)
 )
@@ -48,13 +61,13 @@
     (do
         ; TODO: only call once
         (.analyze fft)
-        ; get color info from mix
+        ; get color info from mic
         (let [hue (fft-to-hue mic)]
             (.colorMode p "hsb" 100)
             (.fill p
                 (* 100 (.getLevel mic))
-                100
-                100
+                (* 100 (.getLevel mic))
+                (* 100 (.getLevel mic))
                 ;; (nth hue 0)
                 ;; (nth hue 1)
                 ;; (nth hue 2)))
@@ -89,7 +102,22 @@
 ;; )
 
 ;; @app-state
+;;
+(Math/log10 1)
+(Math/log10 1000000000)
+
+(defn fit-freq [freq floor]
+  (+ floor (Math/log1p freq))
+)
+
+(Math/log1p 220)
+(fit-freq 110 110)
+(fit-freq 220 110)
+(fit-freq 440 220)
+
 (defn reset-app-state []
   (swap! app-state (fn [] {:app-on false :mic-on false}))
 )
-;; (reset-app-state)
+(reset-app-state)
+
+(* 110 2)

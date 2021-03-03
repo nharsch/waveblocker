@@ -36,7 +36,16 @@
      (- (geo-progression 1 2 i) 1)
      color-max)))
 
-;; TODO: find note, find octave
+(defn find-base-oct-freq [base freq]
+  "given a minimum base frequency, find the nearest octave belor freq"
+  (if (< freq base)
+    nil
+    (let [low (geo-progression base 2 1)
+            high (geo-progression base 2 2)]
+        (if (< freq high)
+        base
+        (find-base-oct-freq high freq)))))
+;; (= (find-base-oct-freq 110 442) 440)
 
 (defn setup [p]
   (def cnv (.createCanvas p 2100 1200))
@@ -120,4 +129,3 @@
 )
 (reset-app-state)
 
-(* 110 2)

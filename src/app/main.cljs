@@ -27,36 +27,53 @@
   ]
 )
 
-(defn geo-progression [a r n]
-  (* (* a 1) (Math/pow r (- n 1))))
+(defn geo-sequence [a r n]
+  (* a (Math/pow r (- n 1))))
+(= (geo-sequence 1 2 3) 4)
+
+(defn inverse-geo-prog [a r v]
+  (+ (/
+        (Math/log (/ v a))
+        (Math/log r))
+     1))
+(= (inverse-geo-prog 1 2 4) 3)
+(= (inverse-geo-prog 110 2 880) 4)
 
 (defn find-base-oct-freq [base freq]
   "given a minimum base frequency, find the nearest octave belor freq"
   (if (< freq base)
     nil
-    (let [low (geo-progression base 2 1)
-            high (geo-progression base 2 2)]
+    (let [low (geo-sequence base 2 1)
+            high (geo-sequence base 2 2)]
         (if (< freq high)
         base
         (find-base-oct-freq high freq)))))
 
-;; (+ 1 (* (- 124 110) (/ 1 (* 2 110))))
 
 (defn freq-to-hue [base-freq color-max freq]
   (let [low (find-base-oct-freq base-freq freq)
         i (* (- freq low) (/ 1 low))]
     (*
-     (- (geo-progression 1 2 (+ 1 i)) 1)
+     (- (geo-sequence 1 2 (+ 1 i)) 1)
      color-max)))
-(map (partial freq-to-hue 110 100) [110 120 160 200 220])
-(map (partial freq-to-hue 110 100) [220 440 880])
+;; (map (partial freq-to-hue 110 100) [110 120 160 200 220])
+;; (map (partial freq-to-hue 110 100) [220 440 880])
+
 
 (defn freq-to-saturation [base octave-range sat-range freq]
   "given a base frequency, range of octaves, and a color range (from 0), find saturation value for frequency"
-  (let [high (geo-progression base 2 octave-range)]
-    ;; TODO
-    ;; (* (- f base) (/)
-    ))
+  (let [high (geo-sequence base 2 (+ 1 octave-range))]
+    (*
+     ; find the freq as a value in freq space, up to octave-range
+     (/
+      (min (- (inverse-geo-prog base 2 freq) 1) octave-range)
+      octave-range)
+     sat-range
+     )))
+(= (freq-to-saturation 110 1 100 110) 0)
+(= (freq-to-saturation 110 1 100 220) 100)
+(= (freq-to-saturation 110 2 100 440) 100)
+(= (freq-to-saturation 110 2 100 220) 50)
 
 
 (defn setup [p]

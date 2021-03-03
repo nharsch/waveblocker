@@ -30,12 +30,6 @@
 (defn geo-progression [a r n]
   (* (* a 1) (Math/pow r (- n 1))))
 
-(defn freq-to-hue [base-freq color-max freq]
-  (let [i (+ 1 (* (- freq base-freq) (/ 1 base-freq)))]
-    (*
-     (- (geo-progression 1 2 i) 1)
-     color-max)))
-
 (defn find-base-oct-freq [base freq]
   "given a minimum base frequency, find the nearest octave belor freq"
   (if (< freq base)
@@ -45,7 +39,25 @@
         (if (< freq high)
         base
         (find-base-oct-freq high freq)))))
-;; (= (find-base-oct-freq 110 442) 440)
+
+;; (+ 1 (* (- 124 110) (/ 1 (* 2 110))))
+
+(defn freq-to-hue [base-freq color-max freq]
+  (let [low (find-base-oct-freq base-freq freq)
+        i (* (- freq low) (/ 1 low))]
+    (*
+     (- (geo-progression 1 2 (+ 1 i)) 1)
+     color-max)))
+(map (partial freq-to-hue 110 100) [110 120 160 200 220])
+(map (partial freq-to-hue 110 100) [220 440 880])
+
+(defn freq-to-saturation [base octave-range sat-range freq]
+  "given a base frequency, range of octaves, and a color range (from 0), find saturation value for frequency"
+  (let [high (geo-progression base 2 octave-range)]
+    ;; TODO
+    ;; (* (- f base) (/)
+    ))
+
 
 (defn setup [p]
   (def cnv (.createCanvas p 2100 1200))

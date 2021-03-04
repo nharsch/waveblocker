@@ -114,12 +114,13 @@
 
         (let [freq (:pitch @app-state)]
             (.colorMode p "hsb" 100)
+            (.noStroke p)
             (.fill p
                 (freq-to-hue BASE 100 freq)
                 (freq-to-saturation BASE OCTAVE-RANGE 100 freq)
                 (+ 10 (* 100 (.getLevel mic))))
             )
-        (.ellipse p (.-mouseX p) (.-mouseY p) 80 80))))
+        (.ellipse p (.-mouseX p) (.-mouseY p) 60 60))))
 
 (def parent-id  "example")
 (when-not (d/getElement parent-id)
@@ -150,20 +151,9 @@
 
 ;; @app-state
 ;;
-(Math/log10 1)
-(Math/log10 1000000000)
 
-(defn fit-freq [freq floor]
-  (+ floor (Math/log1p freq))
-)
-
-(Math/log1p 220)
-(fit-freq 110 110)
-(fit-freq 220 110)
-(fit-freq 440 220)
 
 (defn reset-app-state []
   (swap! app-state (fn [] {:app-on false :mic-on false}))
 )
-(reset-app-state)
-
+;; (reset-app-state)

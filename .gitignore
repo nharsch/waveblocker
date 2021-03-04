@@ -1,3 +1,4 @@
 node_modules
-target/*
+target/*.js
+target/cljs-runtime/*
 .shadow-cljs

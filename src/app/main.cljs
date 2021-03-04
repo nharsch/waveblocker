@@ -6,10 +6,15 @@
 
 
 ; TODO: mic input level atom
+;
+(def BASE (/ 2 55))
+(def OCTAVE-RANGE 3)
+
 (def app-state
   (atom {
          :app-on false
          :mic-on false
+         :pitch 0
          :mic-level 0
          }
   )
@@ -53,9 +58,8 @@
 (defn freq-to-hue [base-freq color-max freq]
   (let [low (find-base-oct-freq base-freq freq)
         i (* (- freq low) (/ 1 low))]
-    (*
-     (- (geo-sequence 1 2 (+ 1 i)) 1)
-     color-max)))
+    (* (- (geo-sequence 1 2 (+ 1 i)) 1)
+       color-max)))
 ;; (map (partial freq-to-hue 110 100) [110 120 160 200 220])
 ;; (map (partial freq-to-hue 110 100) [220 440 880])
 
@@ -65,28 +69,34 @@
   (let [high (geo-sequence base 2 (+ 1 octave-range))]
     (*
      ; find the freq as a value in freq space, up to octave-range
-     (/
-      (min (- (inverse-geo-prog base 2 freq) 1) octave-range)
-      octave-range)
-     sat-range
-     )))
-(= (freq-to-saturation 110 1 100 110) 0)
-(= (freq-to-saturation 110 1 100 220) 100)
-(= (freq-to-saturation 110 2 100 440) 100)
-(= (freq-to-saturation 110 2 100 220) 50)
+     (/ (min (- (inverse-geo-prog base 2 freq) 1) octave-range)
+        octave-range)
+     sat-range)))
 
+
+(defn start-pitch [audioContext mic]
+  (def pitch
+    (js/window.ml5.pitchDetection "./model"
+                        audioContext
+                        mic.stream
+                        (fn [] (println "model loaded")))))
 
 (defn setup [p]
   (def cnv (.createCanvas p 2100 1200))
   cnv.mouseClicked
   (.mouseClicked cnv turn-on)
   (p.userStartAudio)
+  (def audioContext (p.getAudioContext))
   (def mic (js/window.p5.AudioIn.))
-  (def fft (js/window.p5.FFT. 0.8 32))
-  (.start mic)
-  (.setInput fft mic)
+  (.start mic (partial start-pitch audioContext mic))
 )
 
+
+(defn update-pitch []
+  (pitch.getPitch
+    (fn [err, freq]
+      (if freq
+        (swap! app-state assoc :pitch freq)))))
 
 (defn draw [p]
   ; TOOD: but these together
@@ -98,18 +108,17 @@
     )
     (do
         ; TODO: only call once
-        (.analyze fft)
+        ;; (.analyze fft)
+        (update-pitch)
         ; get color info from mic
-        (let [hue (fft-to-hue mic)]
+
+        (let [freq (:pitch @app-state)]
             (.colorMode p "hsb" 100)
             (.fill p
-                (* 100 (.getLevel mic))
-                (* 100 (.getLevel mic))
-                (* 100 (.getLevel mic))
-                ;; (nth hue 0)
-                ;; (nth hue 1)
-                ;; (nth hue 2)))
-                ))
+                (freq-to-hue BASE 100 freq)
+                (freq-to-saturation BASE OCTAVE-RANGE 100 freq)
+                (+ 10 (* 100 (.getLevel mic))))
+            )
         (.ellipse p (.-mouseX p) (.-mouseY p) 80 80))))
 
 (def parent-id  "example")

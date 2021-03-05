@@ -14,23 +14,23 @@
   (atom {
          :app-on false
          :mic-on false
+         :pitch-on false
          :pitch 0
          :mic-level 0
+         :drawing false
+         :history []
          }
   )
 )
 
-(defn turn-on []
-  (swap! app-state assoc :app-on true)
-)
+(defn v-update-last [f v]
+  "return vector with last element updated"
+  (conj
+   (into [] (butlast v))
+   (f (last v))))
+;; (v-update-last [[{:x 1}{:x 2}] [{:x 1}{:x 2}]] (fn [v] (conj v {:x 3})))
 
-(defn fft-to-hue [fft]
-  [
-   (* 100 (:getLevel fft))
-   50
-   50
-  ]
-)
+(defn turn-on [] (swap! app-state assoc :app-on true))
 
 (defn geo-sequence [a r n]
   (* a (Math/pow r (- n 1))))
@@ -98,8 +98,28 @@
       (if freq
         (swap! app-state assoc :pitch freq)))))
 
+(defn paint-map [p]
+  (let [freq (:pitch @app-state)]
+    {:x (.-mouseX p)
+     :y (.-mouseY p)
+     :h (freq-to-hue BASE 100 freq)
+     :s (freq-to-saturation BASE OCTAVE-RANGE 100 freq)
+     :b (+ 10 (* 100 (.getLevel mic)))}))
+
+(defn mousePressed [p]
+  (if (:drawing @app-state)
+    (do
+      (swap! app-state assoc :drawing true)
+      ; add new-stroke in history array
+      (swap! app-state update :history conj [(paint-map p)])))
+  (swap! app-state update :history v-update-last
+         (fn [v] (conj v (paint-map p)))))
+
+(defn mouseReleased []
+  (if (:drawing @app-state)
+    (swap! app-state assoc :drawing false)))
+
 (defn draw [p]
-  ; TOOD: but these together
   (if-not (:app-on @app-state)
     (do
         (.clear p)
@@ -107,20 +127,16 @@
         (.text p "tap to start" 300 300)
     )
     (do
-        ; TODO: only call once
-        ;; (.analyze fft)
+        ; TODO: call update pitch less often than draw
         (update-pitch)
-        ; get color info from mic
-
         (let [freq (:pitch @app-state)]
+            (.background p 255)
             (.colorMode p "hsb" 100)
             (.noStroke p)
-            (.fill p
-                (freq-to-hue BASE 100 freq)
-                (freq-to-saturation BASE OCTAVE-RANGE 100 freq)
-                (+ 10 (* 100 (.getLevel mic))))
-            )
-        (.ellipse p (.-mouseX p) (.-mouseY p) 60 60))))
+            ; draw paint tip
+            (let [m (paint-map p)]
+              (.fill p (:h m) (:s m) (:b m))
+              (.ellipse p (:x m) (:y m) 60 60))))))
 
 (def parent-id  "example")
 (when-not (d/getElement parent-id)
@@ -134,23 +150,6 @@
        parent-id))
 
 
-;; (.getLogAverages fft
- ;; (.getOctaveBands fft 1  55))
- ;;
-;; (.logAverages fft (.getOctaveBands fft 1 55))
-
-;; (.getCentroid fft)
-;; (.getEnergy fft)
-;; (.logAverages fft 5)
-
-;; (defn fft-to-hue [fft]
-;;   (let [octaves (.logAverages fft)]
-;;    octaves
-;;     )
-;; )
-
-;; @app-state
-;;
 
 
 (defn reset-app-state []

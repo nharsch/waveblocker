@@ -18,7 +18,7 @@
          :pitch 0
          :mic-level 0
          :drawing false
-         :history []
+         :history [[{}]]
          }
   )
 )
@@ -82,6 +82,11 @@
                         (fn [] (println "model loaded")))))
 
 (defn setup [p]
+
+  (defn mouseReleased []
+    (println "mouseReleased")
+    (swap! app-state assoc :drawing false))
+
   (def cnv (.createCanvas p 2100 1200))
   cnv.mouseClicked
   (.mouseClicked cnv turn-on)
@@ -106,20 +111,21 @@
      :s (freq-to-saturation BASE OCTAVE-RANGE 100 freq)
      :b (+ 10 (* 100 (.getLevel mic)))}))
 
-(defn mousePressed [p]
-  (if (:drawing @app-state)
-    (do
-      (swap! app-state assoc :drawing true)
-      ; add new-stroke in history array
-      (swap! app-state update :history conj [(paint-map p)])))
-  (swap! app-state update :history v-update-last
-         (fn [v] (conj v (paint-map p)))))
-
-(defn mouseReleased []
-  (if (:drawing @app-state)
-    (swap! app-state assoc :drawing false)))
 
 (defn draw [p]
+  (println :drawing @app-state)
+
+  (if p.mouseIsPressed
+    (do
+        (if-not (:app-on @app-state)
+            (swap! app-state assoc :app-on true))
+        (if-not (:drawing @app-state)
+            (swap! app-state assoc :drawing true))))
+
+  (if p.mouseReleased
+    (do
+      (swap! app-state assoc :drawing false)))
+
   (if-not (:app-on @app-state)
     (do
         (.clear p)
@@ -129,14 +135,29 @@
     (do
         ; TODO: call update pitch less often than draw
         (update-pitch)
-        (let [freq (:pitch @app-state)]
-            (.background p 255)
-            (.colorMode p "hsb" 100)
-            (.noStroke p)
-            ; draw paint tip
-            (let [m (paint-map p)]
-              (.fill p (:h m) (:s m) (:b m))
-              (.ellipse p (:x m) (:y m) 60 60))))))
+        (if (:drawing @app-state)
+            (do
+                (swap! app-state assoc :drawing true)
+                ; add new-stroke in history array
+                (swap! app-state update :history conj [(paint-map p)])))
+            ;; (swap! app-state update :history (fn [hv] (v-update-last hv (fn [v] (conj v (paint-map p))))))
+        (for [stroke (:history @app-state)]
+          (for [p stroke]
+            (do
+                (.colorMode p "hsb" 100)
+                (.noStroke p)
+                ; draw paint tip
+                (let [m (paint-map p)]
+                    (.fill p (:h m) (:s m) (:b m))
+                    (.ellipse p (:x m) (:y m) 60 60)))))
+
+        (.background p 255)
+        (.colorMode p "hsb" 100)
+        (.noStroke p)
+                                        ; draw paint tip
+        (let [m (paint-map p)]
+          (.fill p (:h m) (:s m) (:b m))
+          (.ellipse p (:x m) (:y m) 60 60)))))
 
 (def parent-id  "example")
 (when-not (d/getElement parent-id)

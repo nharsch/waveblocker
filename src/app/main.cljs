@@ -16,14 +16,14 @@
          :mic-on false
          :pitch-on false
          :pitch 0
-         :mic-level 0
-         :drawing false
          :history [[{}]]
          }
   )
 )
 
-(defn v-update-last [f v]
+(def drawing (atom false))
+
+(defn v-update-last [v f]
   "return vector with last element updated"
   (conj
    (into [] (butlast v))
@@ -34,15 +34,15 @@
 
 (defn geo-sequence [a r n]
   (* a (Math/pow r (- n 1))))
-(= (geo-sequence 1 2 3) 4)
+;; (= (geo-sequence 1 2 3) 4)
 
 (defn inverse-geo-prog [a r v]
   (+ (/
         (Math/log (/ v a))
         (Math/log r))
      1))
-(= (inverse-geo-prog 1 2 4) 3)
-(= (inverse-geo-prog 110 2 880) 4)
+;; (= (inverse-geo-prog 1 2 4) 3)
+;; (= (inverse-geo-prog 110 2 880) 4)
 
 (defn find-base-oct-freq [base freq]
   "given a minimum base frequency, find the nearest octave belor freq"
@@ -83,10 +83,6 @@
 
 (defn setup [p]
 
-  (defn mouseReleased []
-    (println "mouseReleased")
-    (swap! app-state assoc :drawing false))
-
   (def cnv (.createCanvas p 2100 1200))
   cnv.mouseClicked
   (.mouseClicked cnv turn-on)
@@ -113,18 +109,21 @@
 
 
 (defn draw [p]
-  (println :drawing @app-state)
+  ;; (println @app-state)
+  ;; (println @drawing)
 
   (if p.mouseIsPressed
     (do
         (if-not (:app-on @app-state)
-            (swap! app-state assoc :app-on true))
-        (if-not (:drawing @app-state)
-            (swap! app-state assoc :drawing true))))
-
-  (if p.mouseReleased
+            (reset! drawing true))
+        (if-not @drawing
+          (do
+            (reset! drawing true)
+            ; add new stroke map
+            (swap! app-state update :history conj [(paint-map p)]))))
     (do
-      (swap! app-state assoc :drawing false)))
+        (if @drawing
+            (reset! drawing false))))
 
   (if-not (:app-on @app-state)
     (do
@@ -135,26 +134,22 @@
     (do
         ; TODO: call update pitch less often than draw
         (update-pitch)
-        (if (:drawing @app-state)
-            (do
-                (swap! app-state assoc :drawing true)
-                ; add new-stroke in history array
-                (swap! app-state update :history conj [(paint-map p)])))
-            ;; (swap! app-state update :history (fn [hv] (v-update-last hv (fn [v] (conj v (paint-map p))))))
-        (for [stroke (:history @app-state)]
-          (for [p stroke]
+        (.background p 255)
+        (doseq [strokes (:history @app-state)]
+          (doseq [m strokes]
             (do
                 (.colorMode p "hsb" 100)
                 (.noStroke p)
                 ; draw paint tip
-                (let [m (paint-map p)]
-                    (.fill p (:h m) (:s m) (:b m))
-                    (.ellipse p (:x m) (:y m) 60 60)))))
-
-        (.background p 255)
+                (.fill p (:h m) (:s m) (:b m))
+                (.ellipse p (:x m) (:y m) 60 60))))
+        (if @drawing
+          ; append to last stroke history
+          (let [nh (v-update-last (:history @app-state) (fn [v] (conj v (paint-map p))))]
+            (swap! app-state assoc :history nh)))
         (.colorMode p "hsb" 100)
         (.noStroke p)
-                                        ; draw paint tip
+; draw paint tip
         (let [m (paint-map p)]
           (.fill p (:h m) (:s m) (:b m))
           (.ellipse p (:x m) (:y m) 60 60)))))

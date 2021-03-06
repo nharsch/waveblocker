@@ -13,6 +13,8 @@
                 :asset-path "."
                 :modules {:main {:init-fn app.main/main!}}
                 :devtools {:after-load app.main/reload!}
+
+                :release {:compiler-options {:optimizations :simple}}
                 }
           }
  }

@@ -1,6 +1,7 @@
 (ns app.main
   (:require
    [goog.dom :as d]
+   ;; [goog.events :as gevents]
    ))
 
 
@@ -47,16 +48,16 @@
   "given a minimum base frequency, find the nearest octave belor freq"
   (if (< freq base)
     nil
-    (let [low-freq (geo-sequence base 2 1)
-          high-freq (geo-sequence base 2 2)]
-        (if (< freq high-freq)
+    (let [low (geo-sequence base 2 1)
+            high (geo-sequence base 2 2)]
+        (if (< freq high)
         base
-        (find-base-oct-freq high-freq freq)))))
+        (find-base-oct-freq high freq)))))
 
 
 (defn freq-to-hue [base-freq color-max freq]
-  (let [low-freq (find-base-oct-freq base-freq freq)
-        i (* (- freq low-freq) (/ 1 low-freq))]
+  (let [low (find-base-oct-freq base-freq freq)
+        i (* (- freq low) (/ 1 low))]
     (* (- (geo-sequence 1 2 (+ 1 i)) 1)
        color-max)))
 ;; (map (partial freq-to-hue 110 100) [110 120 160 200 220])
@@ -65,7 +66,7 @@
 
 (defn freq-to-saturation [base octave-range sat-range freq]
   "given a base frequency, range of octaves, and a color range (from 0), find saturation value for frequency"
-  (let [high-freq (geo-sequence base 2 (+ 1 octave-range))]
+  (let [high (geo-sequence base 2 (+ 1 octave-range))]
     (*
      ; find the freq as a value in freq space, up to octave-range
      (/ (min (- (inverse-geo-prog base 2 freq) 1) octave-range)
@@ -83,6 +84,7 @@
 (defn setup [p]
 
   (def cnv (.createCanvas p 2100 1200))
+  cnv.mouseClicked
   (.mouseClicked cnv turn-on)
   (p.userStartAudio)
   (def audioContext (p.getAudioContext))
@@ -148,9 +150,9 @@
         (.colorMode p "hsb" 100)
         (.noStroke p)
 ; draw paint tip
-        (let [pm (paint-map p)]
-          (.fill p (:h pm) (:s pm) (:b pm))
-          (.ellipse p (:x pm) (:y pm) 60 60)))))
+        (let [m (paint-map p)]
+          (.fill p (:h m) (:s m) (:b m))
+          (.ellipse p (:x m) (:y m) 60 60)))))
 
 (def parent-id  "example")
 (when-not (d/getElement parent-id)
@@ -164,4 +166,9 @@
        parent-id))
 
 
-;; (defn reset-app-state [] (swap! app-state (fn [] {:app-on false :mic-on false})))
+
+
+(defn reset-app-state []
+  (swap! app-state (fn [] {:app-on false :mic-on false}))
+)
+;; (reset-app-state)

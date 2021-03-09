@@ -1,12 +1,10 @@
 (ns app.main
   (:require
    [goog.dom :as d]
-   ;; [goog.events :as gevents]
+   [goog.events :as gevents]
    ))
 
 
-; TODO: mic input level atom
-;
 (def BASE (/ 2 55))
 (def OCTAVE-RANGE 3)
 
@@ -16,12 +14,27 @@
          :mic-on false
          :pitch-on false
          :pitch 0
-         :history [[{}]]
+         :history []
+         :redo []
          }
   )
 )
-
+; drawing separate atom state for performance?
 (def drawing (atom false))
+
+(defn undo []
+  (swap! app-state assoc :redo (conj (:redo @app-state) (last (:history @app-state))))
+  (swap! app-state assoc :history (pop (:history @app-state)))
+  (println "undo")
+  (println @app-state)
+  )
+
+(defn redo []
+  (swap! app-state assoc :history (conj (:history @app-state) (last (:redo @app-state))))
+  (swap! app-state assoc :redo (pop (:redo @app-state)))
+  (println "redo")
+  (println @app-state)
+  )
 
 (defn v-update-last [v f]
   "return vector with last element updated"
@@ -84,7 +97,6 @@
 (defn setup [p]
 
   (def cnv (.createCanvas p 2100 1200))
-  cnv.mouseClicked
   (.mouseClicked cnv turn-on)
   (p.userStartAudio)
   (def audioContext (p.getAudioContext))
@@ -113,14 +125,17 @@
   ;; (println @drawing)
 
   (if p.mouseIsPressed
-    (do
+    ; pressed
+    (if-not (> 0 (.-mouseY p))
+      (do
         (if-not (:app-on @app-state)
-            (reset! drawing true))
+          (reset! drawing true))
         (if-not @drawing
           (do
             (reset! drawing true)
-            ; add new stroke map
-            (swap! app-state update :history conj [(paint-map p)]))))
+                                        ; add new stroke map
+            (swap! app-state update :history conj [(paint-map p)])))))
+    ; not pressed
     (do
         (if @drawing
             (reset! drawing false))))
@@ -154,6 +169,9 @@
           (.fill p (:h m) (:s m) (:b m))
           (.ellipse p (:x m) (:y m) 60 60)))))
 
+(gevents/listen (d/getElement "undo") (.-CLICK gevents/EventType) (fn [e] (undo)))
+(gevents/listen (d/getElement "redo") (.-CLICK gevents/EventType) (fn [e] (redo)))
+
 (def parent-id  "example")
 (when-not (d/getElement parent-id)
   (d/append js/document.body (d/createDom "div" #js {:id parent-id})))
@@ -164,11 +182,3 @@
       (set! (.-setup p) (fn [] (setup p)))
       (set! (.-draw p) (fn [] (draw p))))
        parent-id))
-
-
-
-
-(defn reset-app-state []
-  (swap! app-state (fn [] {:app-on false :mic-on false}))
-)
-;; (reset-app-state)

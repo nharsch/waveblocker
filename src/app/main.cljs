@@ -2,6 +2,8 @@
   (:require
    [goog.dom :as d]
    [goog.events :as gevents]
+   [reagent.core :as r]
+   [reagent.dom :as rdom]
    ))
 
 
@@ -9,28 +11,31 @@
 (def OCTAVE-RANGE 3)
 
 (def app-state
-  (atom {
+  (r/atom {
          :app-on false
          :mic-on false
          :pitch-on false
          :pitch 0
+         :mic-sensitivity 1
+         :mic-level 0
          :history []
          :redo []
          }))
 ; drawing separate atom state for performance?
 (def drawing (atom false))
+
+
 (defn undo []
-  (swap! app-state assoc :redo (conj (:redo @app-state) (last (:history @app-state))))
-  (swap! app-state assoc :history (pop (:history @app-state)))
-  (println "undo")
-  (println @app-state)
-  )
+  (if-not (empty? (:history @app-state))
+    (do
+      (swap! app-state assoc :redo (conj (:redo @app-state) (last (:history @app-state))))
+      (swap! app-state assoc :history (pop (:history @app-state))))))
 
 (defn redo []
-  (swap! app-state assoc :history (conj (:history @app-state) (last (:redo @app-state))))
-  (swap! app-state assoc :redo (pop (:redo @app-state)))
-  (println "redo")
-  (println @app-state))
+  (if-not (empty? (:redo @app-state))
+    (do
+      (swap! app-state assoc :history (conj (:history @app-state) (last (:redo @app-state))))
+      (swap! app-state assoc :redo (pop (:redo @app-state))))))
 
 (defn turn-on [] (swap! app-state assoc :app-on true))
 
@@ -67,14 +72,12 @@
        ))))
 
 
-(map (partial level-curve 0 0.1) [0 0.5 1])
+;; (map (partial level-curve 0 0.1) [0 0.5 1])
 
 (def level-curve-memo (memoize level-curve))
 
-(defn get-mic-level [mic]
-  ; curve val
-  ;; (level-curve-memo (.getLevel mic))
-  (level-curve 0 0.2 (.getLevel mic)))
+(defn get-mic-level [mic] ; curve val ;; (level-curve-memo (.getLevel mic))
+  (level-curve-memo 0 (:mic-sensitivity @app-state) (.getLevel mic)))
 
 
 
@@ -90,17 +93,16 @@
         base
         (find-base-oct-freq high freq)))))
 
-; TODO memoize
 (defn freq-to-hue [base-freq color-max freq]
   (let [low (find-base-oct-freq base-freq freq)
         i (* (- freq low) (/ 1 low))]
     (* (- (geo-sequence 1 2 (+ 1 i)) 1)
        color-max)))
+(def freq-to-hue-memo (memoize freq-to-hue))
 ;; (map (partial freq-to-hue 110 100) [110 120 160 200 220])
 ;; (map (partial freq-to-hue 110 100) [220 440 880])
 
 
-; TODO: memoize
 (defn freq-to-saturation [base octave-range sat-range freq]
   "given a base frequency, range of octaves, and a color range (from 0), find saturation value for frequency"
   (let [high (geo-sequence base 2 (+ 1 octave-range))]
@@ -109,7 +111,7 @@
      (/ (min (- (inverse-geo-prog base 2 freq) 1) octave-range)
         octave-range)
      sat-range)))
-
+(def freq-to-saturation-memo (memoize freq-to-saturation))
 
 (defn start-pitch [audioContext mic]
   (def pitch
@@ -119,7 +121,6 @@
                         (fn [] (println "model loaded")))))
 
 (defn setup [p]
-
   (def cnv (.createCanvas p 2100 1200))
   (.mouseClicked cnv turn-on)
   (p.userStartAudio)
@@ -139,15 +140,12 @@
   (let [freq (:pitch @app-state)]
     {:x (.-mouseX p)
      :y (.-mouseY p)
-     :h (freq-to-hue BASE 100 freq)
-     :s (freq-to-saturation BASE OCTAVE-RANGE 100 freq)
+     :h (freq-to-hue-memo BASE 100 freq)
+     :s (freq-to-saturation-memo BASE OCTAVE-RANGE 100 freq)
      :b (+ 10 (* 100 (get-mic-level mic)))}))
 
 
 (defn draw [p]
-  ;; (println @app-state)
-  ;; (println @drawing)
-
   (if p.mouseIsPressed
     ; pressed
     (if-not (> 0 (.-mouseY p))
@@ -157,7 +155,7 @@
         (if-not @drawing
           (do
             (reset! drawing true)
-                                        ; add new stroke map
+            ; add new stroke map
             (swap! app-state update :history conj [(paint-map p)])))))
     ; not pressed
     (do
@@ -173,6 +171,7 @@
     (do
         ; TODO: call update pitch less often than draw
         (update-pitch)
+        (swap! app-state assoc :mic-level (get-mic-level mic))
         (.background p 255)
         (doseq [strokes (:history @app-state)]
           (doseq [m strokes]
@@ -203,8 +202,6 @@
         (.text p "max vol" 205 8)
         )))
 
-(gevents/listen (d/getElement "undo") (.-CLICK gevents/EventType) (fn [e] (undo)))
-(gevents/listen (d/getElement "redo") (.-CLICK gevents/EventType) (fn [e] (redo)))
 
 (def parent-id  "example")
 (when-not (d/getElement parent-id)
@@ -216,3 +213,30 @@
       (set! (.-setup p) (fn [] (setup p)))
       (set! (.-draw p) (fn [] (draw p))))
        parent-id))
+
+;; toolbar
+
+
+(defn mic-slider []
+
+  [:span "🎙"
+    [:input {:type "range"
+            :name "volume"
+            :min 0 :max 0.99 :step 0.05
+            :on-change (fn [event]
+                          (swap! app-state assoc :mic-sensitivity (- 1 (-> event .-target .-value)))
+                         )}]])
+
+(defn toolbar-component []
+  [:div
+   [mic-slider]
+   [:button {:on-click undo} "↺"]
+   [:button {:on-click redo} "↻"]
+   ]
+  )
+
+(defn render-simple []
+  (rdom/render
+    [toolbar-component]
+    (d/getElement "toolbar")))
+(render-simple)

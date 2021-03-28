@@ -3,8 +3,8 @@
 
  :nrepl {:port 9000}
  :dev-http {8080 "target/"}
- :dependencies
-    [[cider/cider-nrepl "0.21.0"]]
+ :dependencies [[cider/cider-nrepl "0.21.0"]
+                [reagent "1.0.0"]]
 
 
 

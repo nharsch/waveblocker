@@ -1,9 +1,9 @@
 (ns app.main
   (:require
-   [goog.dom :as d]
-   [goog.events :as gevents]
    [reagent.core :as r]
    [reagent.dom :as rdom]
+   [goog.dom :as d]
+   [goog.events :as gevents]
    ["p5" :as p5]
    ["ml5" :as ml5]
    ))
@@ -116,18 +116,19 @@
 (def freq-to-saturation-memo (memoize freq-to-saturation))
 
 (defn start-pitch [audioContext mic]
-  (defonce pitch
-    (ml5.pitchDetection "assets/app/model"
+  (def pitch
+    (ml5/pitchDetection "assets/app/model"
                         audioContext
                         mic.stream
                         (fn [] (println "model loaded")))))
 
+
 (defn setup [p]
-  (defonce cnv (.createCanvas p 1200 1200))
+  (def cnv (.createCanvas p 1200 1200))
   (.mouseClicked cnv turn-on)
-  (p.userStartAudio)
-  (defonce audioContext (p.getAudioContext))
-  (defonce mic (p5.AudioIn.))
+  (.userStartAudio p)
+  (def audioContext (.getAudioContext p))
+  (def mic (p5/AudioIn.))
   (.start mic (partial start-pitch audioContext mic))
 )
 
@@ -205,21 +206,10 @@
         )))
 
 
-(def parent-id "canvas-container")
-
-(when-not (d/getElement parent-id)
-  (d/append d/body (d/createDom "div" #js {:id parent-id})))
-
-(new p5
-    (fn [p]
-        (set! (.-setup p) (fn [] (setup p)))
-        (set! (.-draw p) (fn [] (draw p)))))
-
-
 
 ;; toolbar
 (defn mic-slider []
-  [:span "🎙"
+  [:span "mic sensitivity"
     [:input {:type "range"
             :name "volume"
             :min 0 :max 0.99 :step 0.05
@@ -231,13 +221,22 @@
 (defn toolbar-component []
   [:div
    [mic-slider]
-   [:button {:on-click undo} "↺"]
-   [:button {:on-click redo} "↻"]
+   [:button {:on-click undo} "undo"]
+   [:button {:on-click redo} "redo"]
    ]
   )
 
-(defn render-simple []
+(defn render-toolbar []
   (rdom/render
     [toolbar-component]
     (d/getElement "toolbar")))
-(render-simple)
+
+
+;; start app
+(render-toolbar)
+(def parent-id "canvas-container")
+(new p5
+  (fn [p]
+    (set! (.-setup p) (fn [] (setup p)))
+    (set! (.-draw p) (fn [] (draw p))))
+    parent-id)

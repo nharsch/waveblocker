@@ -1,0 +1,9 @@
+{
+"version":3,
+"file":"module$p5.js",
+"lineCount":1,
+"mappings":"AAAAA,cAAA,UAAA,CAA8B,QAAQ,CAACC,MAAD,CAAQC,OAAR,CAAgBC,MAAhB,CAAuBC,OAAvB,CAAgC,CACtED,MAAAC,QAAA,CAAgBC,EADsD;",
+"sources":["global$module$p5.js"],
+"sourcesContent":["shadow$provide[\"module$p5\"] = function(global,require,module,exports) {\nmodule.exports=(p5);\n};"],
+"names":["shadow$provide","global","require","module","exports","p5"]
+}

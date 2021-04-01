@@ -1,0 +1,9 @@
+{
+"version":3,
+"file":"module$ml5.js",
+"lineCount":1,
+"mappings":"AAAAA,cAAA,WAAA,CAA+B,QAAQ,CAACC,MAAD,CAAQC,OAAR,CAAgBC,MAAhB,CAAuBC,OAAvB,CAAgC,CACvED,MAAAC,QAAA,CAAgBC,GADuD;",
+"sources":["global$module$ml5.js"],
+"sourcesContent":["shadow$provide[\"module$ml5\"] = function(global,require,module,exports) {\nmodule.exports=(ml5);\n};"],
+"names":["shadow$provide","global","require","module","exports","ml5"]
+}

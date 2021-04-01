@@ -4,19 +4,21 @@
    [goog.events :as gevents]
    [reagent.core :as r]
    [reagent.dom :as rdom]
+   ["p5" :as p5]
+   ["ml5" :as ml5]
    ))
 
 
 (def BASE (/ 2 55))
 (def OCTAVE-RANGE 3)
 
-(def app-state
+(defonce app-state
   (r/atom {
          :app-on false
          :mic-on false
          :pitch-on false
          :pitch 0
-         :mic-sensitivity 1
+         :mic-sensitivity 0.25
          :mic-level 0
          :history []
          :redo []
@@ -114,18 +116,18 @@
 (def freq-to-saturation-memo (memoize freq-to-saturation))
 
 (defn start-pitch [audioContext mic]
-  (def pitch
-    (js/window.ml5.pitchDetection "./model"
+  (defonce pitch
+    (ml5.pitchDetection "assets/app/model"
                         audioContext
                         mic.stream
                         (fn [] (println "model loaded")))))
 
 (defn setup [p]
-  (def cnv (.createCanvas p 2100 1200))
+  (defonce cnv (.createCanvas p 1200 1200))
   (.mouseClicked cnv turn-on)
   (p.userStartAudio)
-  (def audioContext (p.getAudioContext))
-  (def mic (js/window.p5.AudioIn.))
+  (defonce audioContext (p.getAudioContext))
+  (defonce mic (p5.AudioIn.))
   (.start mic (partial start-pitch audioContext mic))
 )
 
@@ -203,26 +205,25 @@
         )))
 
 
-(def parent-id  "example")
-(when-not (d/getElement parent-id)
-  (d/append js/document.body (d/createDom "div" #js {:id parent-id})))
+(def parent-id "canvas-container")
 
-(def example
-  (new js/window.p5
+(when-not (d/getElement parent-id)
+  (d/append d/body (d/createDom "div" #js {:id parent-id})))
+
+(new p5
     (fn [p]
-      (set! (.-setup p) (fn [] (setup p)))
-      (set! (.-draw p) (fn [] (draw p))))
-       parent-id))
+        (set! (.-setup p) (fn [] (setup p)))
+        (set! (.-draw p) (fn [] (draw p)))))
+
+
 
 ;; toolbar
-
-
 (defn mic-slider []
-
   [:span "🎙"
     [:input {:type "range"
             :name "volume"
             :min 0 :max 0.99 :step 0.05
+            :value (- 1 (:mic-sensitivity @app-state))
             :on-change (fn [event]
                           (swap! app-state assoc :mic-sensitivity (- 1 (-> event .-target .-value)))
                          )}]])

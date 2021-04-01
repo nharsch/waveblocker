@@ -1,0 +1,9 @@
+{
+"version":3,
+"file":"shadow.js.shim.module$p5$lib$addons$p5_sound.js",
+"lineCount":5,
+"mappings":"AAAAA,IAAAC,QAAA,CAAa,8CAAb,CAAA;AACAD,IAAAC,QAAA,CAAa,qDAAb,CAAA;AACAC,MAAAC,GAAAC,KAAAC,8BAAA,GAA+CC,OAAA,CAAQ,2BAAR,CAA/C;AACAC,mDAAAC,QAAA,GAA8DN,MAAAC,GAAAC,KAAAC,8BAA9D;;",
+"sources":["shadow.js.shim.module$p5$lib$addons$p5_sound.js"],
+"sourcesContent":["goog.provide(\"shadow.js.shim.module$p5$lib$addons$p5_sound\");\ngoog.provide(\"module$shadow_js_shim_module$p5$lib$addons$p5_sound\");\nshadow.js.shim.module$p5$lib$addons$p5_sound = require(\"p5/lib/addons/p5.sound.js\");\nmodule$shadow_js_shim_module$p5$lib$addons$p5_sound.default = shadow.js.shim.module$p5$lib$addons$p5_sound;\n"],
+"names":["goog","provide","shadow","js","shim","module$p5$lib$addons$p5_sound","require","module$shadow_js_shim_module$p5$lib$addons$p5_sound","default"]
+}

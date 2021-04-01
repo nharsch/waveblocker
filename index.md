@@ -1,3 +1,3 @@
 # Wavepainter
 
-[Sing Colors](./target/index.html)
+[Sing Colors](./public/index.html)

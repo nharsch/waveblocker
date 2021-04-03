@@ -223,8 +223,7 @@
    [mic-slider]
    [:button {:on-click undo} "undo"]
    [:button {:on-click redo} "redo"]
-   ]
-  )
+  ])
 
 (defn render-toolbar []
   (rdom/render
@@ -233,10 +232,15 @@
 
 
 ;; start app
-(render-toolbar)
 (def parent-id "canvas-container")
-(new p5
-  (fn [p]
-    (set! (.-setup p) (fn [] (setup p)))
-    (set! (.-draw p) (fn [] (draw p))))
-    parent-id)
+(when-not (d/getElement parent-id)
+  (d/append js/document.body (d/createDom "div" #js {:id parent-id})))
+(def canvas-div (d/getElement parent-id))
+(def paint-canvas
+    (new p5
+        (fn [p]
+            (set! (.-setup p) (fn [] (setup p)))
+            (set! (.-draw p) (fn [] (draw p))))
+        canvas-div))
+(render-toolbar)
+(println "app loaded")

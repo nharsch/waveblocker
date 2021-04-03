@@ -4,7 +4,8 @@
  :nrepl {:port 9000}
  :dev-http {8080 "public"}
  :dependencies [[cider/cider-nrepl "0.21.0"]
-                [reagent "1.0.0"]]
+                [reagent "1.0.0"]
+                ]
 
 
 
@@ -12,13 +13,14 @@
                 :output-dir "public/assets/app/js"
                 :asset-path "/assets/app/js"
                 :modules {:main {:entries [app.main]}}
-                ;; :devtools {:after-load app.main/reload!}
-                :js-options {:resolve {
+                :js-options {
+                             :resolve {
                                        "ml5" {:target :global :global "ml5"}
                                        "p5" {:target :global :global "p5"}
                                        }
+                             ;; :js-provider :external
                              }
-                ;; :release {:compiler-options {:optimizations :simple}}
+                :release {:compiler-options {:optimizations :simple}}
                 }
           }
  }

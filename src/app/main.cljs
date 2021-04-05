@@ -147,6 +147,12 @@
      :s (freq-to-saturation-memo BASE OCTAVE-RANGE 100 freq)
      :b (+ 10 (* 100 (get-mic-level mic)))}))
 
+(defn draw-paint-map [p pm]
+  (do
+    (.colorMode p "hsb" 100)
+    (.noStroke p)
+    (.fill p (:h pm) (:s pm) (:b pm))
+    (.ellipse p (:x pm) (:y pm) 40 40)))
 
 (defn draw [p]
   (if p.mouseIsPressed
@@ -167,23 +173,21 @@
 
   (if-not (:app-on @app-state)
     (do
+        (.textSize p 52)
         (.clear p)
         (.fill p 50)
-        (.text p "tap to start" 300 300)
+        (.text p "tap to start" 50 80)
     )
     (do
         ; TODO: call update pitch less often than draw
+        (.textSize p 12)
         (update-pitch)
         (swap! app-state assoc :mic-level (get-mic-level mic))
         (.background p 255)
         (doseq [strokes (:history @app-state)]
           (doseq [m strokes]
             (do
-                (.colorMode p "hsb" 100)
-                (.noStroke p)
-                ; draw paint tip
-                (.fill p (:h m) (:s m) (:b m))
-                (.ellipse p (:x m) (:y m) 60 60))))
+              (draw-paint-map p m))))
         (if @drawing
           ; append to last stroke history
           (let [nh (v-update-last (:history @app-state) (fn [v] (conj v (paint-map p))))]
@@ -192,8 +196,7 @@
         (.noStroke p)
         ; draw paint tip
         (let [m (paint-map p)]
-          (.fill p (:h m) (:s m) (:b m))
-          (.ellipse p (:x m) (:y m) 60 60)
+          (draw-paint-map p m)
           ; level fader
           (.rect p 0 10 (* 250 (get-mic-level mic)) 10))
         (.fill p  0 0 50)
@@ -244,3 +247,4 @@
         canvas-div))
 (render-toolbar)
 (println "app loaded")
+

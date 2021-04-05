@@ -123,8 +123,9 @@
                         (fn [] (println "model loaded")))))
 
 
+
 (defn setup [p]
-  (def cnv (.createCanvas p 1200 1200))
+  (def cnv (.createCanvas p 800 500))
   (.mouseClicked cnv turn-on)
   (.userStartAudio p)
   (def audioContext (.getAudioContext p))
@@ -132,14 +133,13 @@
   (.start mic (partial start-pitch audioContext mic))
 )
 
-
 (defn update-pitch []
   (pitch.getPitch
     (fn [err, freq]
       (if freq
         (swap! app-state assoc :pitch freq)))))
 
-(defn paint-map [p]
+(defn make-paint-map [p]
   (let [freq (:pitch @app-state)]
     {:x (.-mouseX p)
      :y (.-mouseY p)
@@ -157,29 +157,28 @@
 (defn draw [p]
   (if p.mouseIsPressed
     ; pressed
-    (if-not (> 0 (.-mouseY p))
+    (if-not (> 0 (.-mouseY p)) ; don't draw off map
       (do
         (if-not (:app-on @app-state)
           (reset! drawing true))
         (if-not @drawing
           (do
             (reset! drawing true)
-            ; add new stroke map
-            (swap! app-state update :history conj [(paint-map p)])))))
+            (swap! app-state update :history conj [(make-paint-map p)])))))
     ; not pressed
-    (do
-        (if @drawing
-            (reset! drawing false))))
+    (if @drawing
+        (reset! drawing false)))
 
   (if-not (:app-on @app-state)
+    ; loading text
     (do
         (.textSize p 52)
         (.clear p)
         (.fill p 50)
         (.text p "tap to start" 50 80)
     )
+    ; app on
     (do
-        ; TODO: call update pitch less often than draw
         (.textSize p 12)
         (update-pitch)
         (swap! app-state assoc :mic-level (get-mic-level mic))
@@ -190,12 +189,14 @@
               (draw-paint-map p m))))
         (if @drawing
           ; append to last stroke history
-          (let [nh (v-update-last (:history @app-state) (fn [v] (conj v (paint-map p))))]
+          (let [nh (v-update-last
+                    (:history @app-state)
+                    (fn [v] (conj v (make-paint-map p))))]
             (swap! app-state assoc :history nh)))
         (.colorMode p "hsb" 100)
         (.noStroke p)
         ; draw paint tip
-        (let [m (paint-map p)]
+        (let [m (make-paint-map p)]
           (draw-paint-map p m)
           ; level fader
           (.rect p 0 10 (* 250 (get-mic-level mic)) 10))
@@ -212,7 +213,7 @@
 
 ;; toolbar
 (defn mic-slider []
-  [:span "mic sensitivity"
+  [:span "🎙"
     [:input {:type "range"
             :name "volume"
             :min 0 :max 0.99 :step 0.05
@@ -224,8 +225,8 @@
 (defn toolbar-component []
   [:div
    [mic-slider]
-   [:button {:on-click undo} "undo"]
-   [:button {:on-click redo} "redo"]
+   [:button {:on-click undo} "<--"]
+   [:button {:on-click redo} "-->"]
   ])
 
 (defn render-toolbar []
@@ -235,10 +236,7 @@
 
 
 ;; start app
-(def parent-id "canvas-container")
-(when-not (d/getElement parent-id)
-  (d/append js/document.body (d/createDom "div" #js {:id parent-id})))
-(def canvas-div (d/getElement parent-id))
+(defonce canvas-div (d/getElement "canvas-container"))
 (def paint-canvas
     (new p5
         (fn [p]
@@ -247,4 +245,3 @@
         canvas-div))
 (render-toolbar)
 (println "app loaded")
-

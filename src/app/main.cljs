@@ -60,12 +60,12 @@
      1))
 ;; (= (inverse-geo-prog 1 2 4) 3)
 ;; (= (inverse-geo-prog 110 2 880) 4)
-;;
-;;
+
+
 (defn level-curve [lmin lmax level]
   (Math/log2
    (+ 1
-  ;;     ; set max vol ~ 80% min vol ~10%
+;;     ; set max vol ~ 80% min vol ~10%
       (*
        (/ 1 (- lmax lmin))
        (-
@@ -82,11 +82,8 @@
   (level-curve-memo 0 (:mic-sensitivity @app-state) (.getLevel mic)))
 
 
-
-;; (map Math/log2 [1 1.5 2])
-
 (defn find-base-oct-freq [base freq]
-  "given a minimum base frequency, find the nearest octave belor freq"
+  "given a minimum base frequency, find the nearest octave below reference frequency (freq)"
   (if (< freq base)
     nil
     (let [low (geo-sequence base 2 1)
@@ -98,7 +95,8 @@
 (defn freq-to-hue [base-freq color-max freq]
   (let [low (find-base-oct-freq base-freq freq)
         i (* (- freq low) (/ 1 low))]
-    (* (- (geo-sequence 1 2 (+ 1 i)) 1)
+    (* (- (geo-sequence 1 2 (+ 1 i)) 
+          1)
        color-max)))
 (def freq-to-hue-memo (memoize freq-to-hue))
 ;; (map (partial freq-to-hue 110 100) [110 120 160 200 220])
@@ -176,6 +174,8 @@
         (.clear p)
         (.fill p 50)
         (.text p "tap to start" 50 80)
+        (.textSize p 22)
+        (.text p "...make sure you allow mic access" 50 90)
     )
     ; app on
     (do
@@ -213,7 +213,7 @@
 
 ;; toolbar
 (defn mic-slider []
-  [:span "🎙"
+  [:span "🎙 mic level"
     [:input {:type "range"
             :name "volume"
             :min 0 :max 0.99 :step 0.05
@@ -225,8 +225,8 @@
 (defn toolbar-component []
   [:div
    [mic-slider]
-   [:button {:on-click undo} "<--"]
-   [:button {:on-click redo} "-->"]
+   [:button {:on-click undo} "<-- undo"]
+   [:button {:on-click redo} "redo -->"]
   ])
 
 (defn render-toolbar []

@@ -1,6 +1,8 @@
 # Wavepainter
 Sing colors
 
+Try it live [here](https://nigelharsch.com/waveblocker/public/index.html)
+
 A little paint app where the user changes colors by singing.
 Pitch changes change color, volume changes brightness.
 Uses Web Audio APIs, ml5.js, p5.js with Clojurescript.
